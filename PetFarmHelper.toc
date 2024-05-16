@@ -1,16 +1,24 @@
-## Interface: 70300
+## Interface: 100206
 ## Title: Pet Farm Helper
 ## Author: silencer2k@gmail.com
 ## SavedVariables: PetFarmHelperDB
-## Version: 7.3.0
+## Version: 10.2.06
+## X-Curse-Packaged-Version: 0.6
+## X-Curse-Project-Name: Pet Farm Helper (What Pet to Farm Next?)
+## X-Curse-Project-ID: pet-farm-helper
+## X-Curse-Repository-ID: wow/pet-farm-helper/mainline
+## X-Curse-Packaged-Version: 10.2.06
+## X-Curse-Project-Name: Pet Farm Helper (What Pet to Farm Next?)
+## X-Curse-Project-ID: pet-farm-helper
+## X-Curse-Repository-ID: wow/pet-farm-helper/mainline
 
 PetFarmHelper.xml
 
-locales\enUS.lua
-locales\ruRU.lua
-
-locales\deDE.lua
 locales\esES.lua
+locales\enUS.lua
+
+locales\ruRU.lua
+locales\deDE.lua
 locales\esMX.lua
 locales\frFR.lua
 locales\itIT.lua
@@ -22,7 +30,6 @@ locales\zhTW.lua
 PetsDB.lua
 PetFarmHelper.lua
 
-Config.lua
+Modules/Logger.lua
 
-AltCraftFrame.xml
-AltCraftFrame.lua
+Config.lua
