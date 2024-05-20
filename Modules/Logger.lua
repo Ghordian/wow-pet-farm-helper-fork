@@ -1,6 +1,7 @@
-local addonName, addonTable = ...
+local addonName, addon = ...
+--local addonName = "PetFarmHelper"
 
-local addon = LibStub("AceAddon-3.0"):GetAddon(addonName)
+--local PetFarmHelper = LibStub("AceAddon-3.0"):GetAddon(addonName)
 local Logger = addon:NewModule("Logger")
 
 local logLevels = {
@@ -42,7 +43,7 @@ function Logger:Debug(...)
 		bShow = self.config:DebugTracing()
 	end
 	if bShow then
-		addon:Print(self:Cyan("[DEBUG]"), ...)
+		PetFarmHelper:Print(self:Cyan("[DEBUG]"), ...)
 	else
 		self:MaybeLog("DEBUG", self:Cyan("[DEBUG]"), ...)
 	end
@@ -62,20 +63,20 @@ function Logger:Error(...)
 		bShow = self.config:ErrorReporting();
 	end
 	if bShow then
-		addon:Print(self:Red("[ERROR]"), ...)
+		PetFarmHelper:Print(self:Red("[ERROR]"), ...)
 	else
 		self:MaybeLog("ERROR", ...)
 	end
 end
 
 function Logger:Print(...)
-	addon:Print(...)
+	PetFarmHelper:Print(...)
 end
 
 function Logger:MaybeLog(level, ...)
 	local logLevel = self:GetLogLevel()
 	if (logLevels[logLevel] <= logLevels[level]) then
-		addon:Print(...)
+		PetFarmHelper:Print(...)
 	end
 end
 

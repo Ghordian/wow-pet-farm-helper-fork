@@ -1,6 +1,6 @@
 local addonName, addon = ...
 
-LibStub('AceAddon-3.0'):NewAddon(addon, addonName, 'AceEvent-3.0', 'AceTimer-3.0')
+LibStub('AceAddon-3.0'):NewAddon(addon, addonName, 'AceEvent-3.0', 'AceTimer-3.0', "AceHook-3.0")
 
 local L = LibStub('AceLocale-3.0'):GetLocale(addonName)
 local LBB = LibStub('LibBabble-Boss-3.0'):GetUnstrictLookupTable()
@@ -33,41 +33,21 @@ end
 
 function addon:OnInitialize()
 
---	self.logger = self:GetModule("Logger")
+		self.version = "v10.02.07.001";
 
-		self.db = LibStub('AceDB-3.0'):New(addonName .. 'DB', {
-				profile = {
-						hide_normal = false,
-						hide_raid = false,
-						hide_world = false,
-						hide_quest = false,
+		self.config = self:GetModule("Config")
+		self.logger = self:GetModule("Logger")
 
-						hide_collected = false,
+		self.config:Init(self)
+		self.logger:Init(self.config)
 
-						minimap = {
-								hide = false,
-						},
-				},
-		}, true)
+		self.ldb = self.config.LDB;
+		self.profile = self.config.db.profile;
 
-		self.ldb = LibStub('LibDataBroker-1.1'):NewDataObject(addonName, {
-				type = 'launcher',
-				icon = 'Interface\\ICONS\\INV_Misc_Pet_02',
-				label = "Pet Farm Helper",
-				OnEnter = function(...)
-						self:ShowTooltip(...)
-				end,
-				OnLeave = function()
-				end,
-				OnClick = function(obj, button)
-						if button == 'RightButton' then
-								InterfaceOptionsFrame_OpenToCategory(addonName)
-						end
-				end,
-		})
-
-		self.icon = LibStub('LibDBIcon-1.0')
-		self.icon:Register(addonName, self.ldb, self.db.profile.minimap)
+--[[ moved to Modules\Config
+--	self.icon = LibStub('LibDBIcon-1.0')
+--	self.icon:Register(addonName, self.ldb, self.profile.minimap)
+--]]
 
 		self:RegisterEvent('COMBAT_LOG_EVENT_UNFILTERED', function(...)
 				addon:OnCombatEvent(...)
@@ -90,9 +70,6 @@ function addon:OnInitialize()
 --]]
 		TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Item, OnTooltipSetItem)
 
-		LibStub('AceConfig-3.0'):RegisterOptionsTable(addonName, self:GetOptions())
-		LibStub('AceConfigDialog-3.0'):AddToBlizOptions(addonName, addonName, nil)
-
 		self.trackNpc = {}
 
 		local itemId, itemData
@@ -112,7 +89,7 @@ function addon:OnInitialize()
 						end
 				else
 						-- database incomplete
-					print("WARN; database incomplete itemId; "..itemId);
+					self.logger.Warn("WARN; database incomplete itemId; "..itemId);
 				end
 		end
 
@@ -198,7 +175,7 @@ function MapInfo.GetMapNameByID(uiMapID)
 end
 
 function addon:GetItemSourceInfo(itemSource)
-	--print("GetItemSourceInfo", itemSource)
+	--self.logger.Trace("GetItemSourceInfo", itemSource)
 
 		local zoneName = MapInfo.GetMapNameByID(itemSource.zone_id)
 		if not zoneName then
@@ -232,7 +209,7 @@ function addon:GetItemSourceInfo(itemSource)
 end
 
 function addon:GetPlayerItems()
---print("GetPlayerItems")
+	--self.logger.Trace("GetPlayerItems")
 
 		local playerItems, petJournalInfo = {}, {}
 
@@ -262,7 +239,7 @@ function addon:GetPlayerItems()
 				end
 		end
 
---print("count; "..count);
+	--self.logger.Trace("count; "..count);
 
 		self:RestorePetJournalFilters(saved)
 
@@ -270,7 +247,7 @@ function addon:GetPlayerItems()
 end
 
 function addon:BuildTooltipData()
---print("BuildTooltipData");
+	--self.logger.Trace("BuildTooltipData");
 
 		local i, j
 
@@ -303,7 +280,7 @@ function addon:BuildTooltipData()
 		local playerLevel = UnitLevel('player') or 0
 		local playerZoneName = GetRealZoneText() or ""
 
---print("player; "..playerFaction.."; "..playerLevel .."; "..playerZoneName);
+	--self.logger.Trace("player; "..playerFaction.."; "..playerLevel .."; "..playerZoneName);
 
 		local normalItems, raidItems, worldItems, questItems = {}, {}, {}, {}
 
@@ -312,7 +289,7 @@ function addon:BuildTooltipData()
 		for itemId, itemData in pairs(PFH_DB_PETS) do
 				itemCount = itemCount + 1
 				if (not playerItems[itemData.npc_id] 
-						or (not self.db.profile.hide_collected
+						or (not self.profile.hide_collected
 								and (playerItems[itemData.npc_id].count < petJournalInfo[itemData.npc_id].maxCount or petJournalInfo[itemData.npc_id].isTradeable)))
 						and (not itemData.faction or itemData.faction == playerFaction)
 				then
@@ -321,7 +298,7 @@ function addon:BuildTooltipData()
 
 						local itemSource
 						if not itemData.from then
-							print("itemData incompleted; itemId; "..itemId.."; "..dispName)
+							self.logger.Error("itemData incompleted; itemId; "..itemId.."; "..dispName)
 							break
 						end
 						for _, itemSource in pairs(itemData.from) do
@@ -469,7 +446,7 @@ function addon:BuildAltCraftList()
 end
 
 function addon:UpdateTooltip(tooltip)
---print("UpdateTooltip");
+	--self.logger.Trace("UpdateTooltip");
 
 		tooltip:Clear()
 
@@ -478,26 +455,26 @@ function addon:UpdateTooltip(tooltip)
 		lineNo = tooltip:AddLine()
 		tooltip:SetCell(lineNo, 1, string.format('%s: |c%s%s|r', L.title_mode,
 				COLOR_MODE_TEXT,
-				self.db.profile.hide_collected and L.mode_collector or L.mode_trader
+				self.profile.hide_collected and L.mode_collector or L.mode_trader
 		), nil, nil, 5)
 
 		tooltip:SetLineScript(lineNo, 'OnMouseUp', function()
-				self.db.profile.hide_collected = not self.db.profile.hide_collected
+				self.profile.hide_collected = not self.profile.hide_collected
 				self:UpdateTooltip(tooltip)
 		end)
 
---print("BuildTooltipData");
+	--self.logger.Trace("BuildTooltipData");
 
 		for _, itemTable in pairs(self:BuildTooltipData()) do
 				if not table.s2k_is_empty(itemTable.items) then
 						tooltip:AddSeparator(unpack(TOOLTIP_SEPARATOR))
 
-						if self.db.profile['hide_' .. itemTable.title] then
+						if self.profile['hide_' .. itemTable.title] then
 								lineNo = tooltip:AddLine()
 								tooltip:SetCell(lineNo, 1, '|TInterface\\Buttons\\UI-PlusButton-Up:16|t' .. L['title_' .. itemTable.title], nil, nil, 5)
 
 								tooltip:SetLineScript(lineNo, 'OnMouseUp', function()
-										self.db.profile['hide_' .. itemTable.title] = false
+										self.profile['hide_' .. itemTable.title] = false
 										self:UpdateTooltip(tooltip)
 								end)
 						else
@@ -505,7 +482,7 @@ function addon:UpdateTooltip(tooltip)
 								tooltip:SetCell(lineNo, 1, '|TInterface\\Buttons\\UI-MinusButton-Up:16|t' .. L['title_' .. itemTable.title], nil, nil, 5)
 
 								tooltip:SetLineScript(lineNo, 'OnMouseUp', function()
-										self.db.profile['hide_' .. itemTable.title] = true
+										self.profile['hide_' .. itemTable.title] = true
 										self:UpdateTooltip(tooltip)
 								end)
 
@@ -612,7 +589,7 @@ function addon:UpdateTooltip(tooltip)
 end
 
 function addon:OpenPetJournal(id, isPetId)
---print("OpenPetJournal");
+	--self.logger.Trace("OpenPetJournal");
 		if not CollectionsJournal:IsShown() then
 				ToggleCollectionsJournal()
 		end
@@ -629,7 +606,7 @@ function addon:OpenPetJournal(id, isPetId)
 end
 
 function addon:SavePetJournalFilters()
---print("SavePetJournalFilters");
+	--self.logger.Trace("SavePetJournalFilters");
 
 		local saved = { flag = {}, source = {}, type = {} }
 
@@ -669,14 +646,14 @@ function addon:RestorePetJournalFilters(saved)
 end
 
 function addon:OnGameTooltipCleared(tooltip)
---print("OnGameTooltipCleared")
+	--self.logger.Trace("OnGameTooltipCleared")
 end
 
 function addon:OnGameTooltipSetItem(tooltip, data)
 		local tooltipName = tooltip:GetName()
-	--print("OnGameTooltipSetItem"..tooltipName)
+	--self.logger.Trace("OnGameTooltipSetItem"..tooltipName)
 		return 
-
+--[[
 		local testName, link = tooltip:GetItem()
 		if link then
 				local itemId = 0 + (link:match('|Hitem:(%d+):') or 0)
@@ -700,8 +677,9 @@ function addon:OnGameTooltipSetItem(tooltip, data)
 						tooltip:AddLine(string.format('itemId %d', itemId), unpack(COLOR_ITEM_TOOLTIP))
 				end
 		else
-		--print("OnGameTooltipSetItem; no link; "..tooltipName)
-		end
+		--self.logger.Trace("OnGameTooltipSetItem; no link; "..tooltipName)
+	end
+--]]
 end
 
 function addon:BuildPetDataTable()
@@ -724,7 +702,7 @@ function addon:BuildPetDataTable()
 		end
 	end
 
-	self.db.petDataTable = newDataTable
+	self.petDataTable = newDataTable
 
 --[[
 	local count = 0
